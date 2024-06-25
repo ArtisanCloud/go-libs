@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
-	"github.com/ArtisanCloud/PowerLibs/v3/http/contract"
-	"github.com/pkg/errors"
 	"io"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
+
+	"github.com/ArtisanCloud/PowerLibs/v3/http/contract"
+	"github.com/pkg/errors"
 )
 
 type Dataflow struct {
