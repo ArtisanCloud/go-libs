@@ -2,11 +2,11 @@ package zap
 
 import (
 	"github.com/ArtisanCloud/PowerLibs/v3/logger/contract"
+	lumberjack "github.com/ArtisanCloud/PowerLibs/v3/logger/lib"
 	"github.com/ArtisanCloud/PowerLibs/v3/object"
 	os2 "github.com/ArtisanCloud/PowerLibs/v3/os"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"time"
 )
