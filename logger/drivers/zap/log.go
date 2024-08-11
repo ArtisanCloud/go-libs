@@ -96,11 +96,6 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 	//fmt.Dump(level, ok)
 	if ok {
 		switch level {
-		case "off":
-			// 将日志级别设置为zapcore.Level(-1)，相当于关闭日志输出
-			infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-				return false // 禁用所有日志
-			})
 		case "debug":
 			infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 				return lvl < zapcore.ErrorLevel
