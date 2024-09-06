@@ -1,13 +1,17 @@
 package logger
 
 import (
+	"context"
 	"github.com/ArtisanCloud/PowerLibs/v3/object"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"net/http"
 	"os"
 	"testing"
+	"time"
 )
 
-var strArtisanCloudPath = "/var/log/ArtisanCloud/PowerLibs"
+var strArtisanCloudPath = "./"
 var strOutputPath = strArtisanCloudPath + "/output.log"
 var strErrorPath = strArtisanCloudPath + "/errors.log"
 
@@ -16,11 +20,18 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	initTracer()
+}
+
+func initTracer() {
+	tp := trace.NewTracerProvider()
+	// Set Global Tracer Provider
+	otel.SetTracerProvider(tp)
 }
 
 func Test_Log_Info(t *testing.T) {
-	driver := "zap"
-	logger, err := NewLogger(driver, &object.HashMap{
+	logger, err := NewLogger(nil, &object.HashMap{
 		"env":        "test",
 		"outputPath": strOutputPath,
 		"errorPath":  strErrorPath,
@@ -29,7 +40,16 @@ func Test_Log_Info(t *testing.T) {
 		t.Error(err)
 	}
 
+	// without context
 	logger.Info("test info", "app response", &http.Response{})
+
+	// log with context，will append traceId and spanId if ctx hash trace info
+	tracer := otel.Tracer("example-tracer")
+	ctx, span := tracer.Start(context.Background(), "test")
+	defer span.End()
+
+	logger.WithContext(ctx).Info("test info with context")
+	logger.WithContext(ctx).InfoF("current time %s", time.Now().Format("2006-01-02 15:04:05"))
 
 }
 

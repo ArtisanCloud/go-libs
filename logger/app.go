@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"context"
 	"errors"
 	"github.com/ArtisanCloud/PowerLibs/v3/logger/contract"
 	"github.com/ArtisanCloud/PowerLibs/v3/logger/drivers/zap"
@@ -10,6 +11,7 @@ import (
 
 type Logger struct {
 	Driver contract.LoggerInterface
+	ctx    context.Context
 }
 
 func NewLogger(driver interface{}, config *object.HashMap) (logger *Logger, err error) {
@@ -33,42 +35,47 @@ func NewLogger(driver interface{}, config *object.HashMap) (logger *Logger, err 
 
 }
 
+func (log *Logger) WithContext(ctx context.Context) *Logger {
+	log.ctx = ctx
+	return log
+}
+
 func (log *Logger) Debug(msg string, v ...interface{}) {
-	log.Driver.Debug(msg, v...)
+	log.Driver.WithContext(log.ctx).WithContext(log.ctx).Debug(msg, v...)
 }
 func (log *Logger) Info(msg string, v ...interface{}) {
-	log.Driver.Info(msg, v...)
+	log.Driver.WithContext(log.ctx).Info(msg, v...)
 }
 func (log *Logger) Warn(msg string, v ...interface{}) {
-	log.Driver.Warn(msg, v...)
+	log.Driver.WithContext(log.ctx).Warn(msg, v...)
 }
 func (log *Logger) Error(msg string, v ...interface{}) {
-	log.Driver.Error(msg, v...)
+	log.Driver.WithContext(log.ctx).Error(msg, v...)
 }
 func (log *Logger) Panic(msg string, v ...interface{}) {
-	log.Driver.Panic(msg, v...)
+	log.Driver.WithContext(log.ctx).Panic(msg, v...)
 }
 func (log *Logger) Fatal(msg string, v ...interface{}) {
-	log.Driver.Fatal(msg, v...)
+	log.Driver.WithContext(log.ctx).Fatal(msg, v...)
 }
 
 func (log *Logger) DebugF(format string, args ...interface{}) {
-	log.Driver.DebugF(format, args)
+	log.Driver.WithContext(log.ctx).DebugF(format, args)
 }
 func (log *Logger) InfoF(format string, args ...interface{}) {
-	log.Driver.InfoF(format, args)
+	log.Driver.WithContext(log.ctx).InfoF(format, args)
 }
 func (log *Logger) WarnF(format string, args ...interface{}) {
-	log.Driver.WarnF(format, args)
+	log.Driver.WithContext(log.ctx).WarnF(format, args)
 }
 func (log *Logger) ErrorF(format string, args ...interface{}) {
-	log.Driver.ErrorF(format, args)
+	log.Driver.WithContext(log.ctx).ErrorF(format, args)
 }
 func (log *Logger) PanicF(format string, args ...interface{}) {
-	log.Driver.PanicF(format, args)
+	log.Driver.WithContext(log.ctx).PanicF(format, args)
 }
 func (log *Logger) FatalF(format string, args ...interface{}) {
-	log.Driver.FatalF(format, args)
+	log.Driver.WithContext(log.ctx).FatalF(format, args)
 }
 
 func InitLogPath(path string, files ...string) (err error) {
