@@ -9,8 +9,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"reflect"
-	"runtime"
-	"strings"
 )
 
 /**
@@ -144,23 +142,4 @@ func TraceIDFromContext(ctx context.Context) string {
 	}
 
 	return ""
-}
-
-func GetCaller(callDepth int) string {
-	_, file, line, ok := runtime.Caller(callDepth)
-	if !ok {
-		return ""
-	}
-
-	idx := strings.LastIndexByte(file, '/')
-	if idx < 0 {
-		return fmt.Sprintf("%s:%d", file, line)
-	}
-
-	idx = strings.LastIndexByte(file[:idx], '/')
-	if idx < 0 {
-		return fmt.Sprintf("%s:%d", file, line)
-	}
-
-	return fmt.Sprintf("%s:%d", file[idx+1:], line)
 }
