@@ -1,6 +1,18 @@
 package drivers
 
-type DummyLogger struct{}
+import (
+	"context"
+	"github.com/ArtisanCloud/PowerLibs/v3/logger/contract"
+)
+
+type DummyLogger struct {
+	ctx context.Context
+}
+
+func (l *DummyLogger) WithContext(ctx context.Context) contract.LoggerInterface {
+	l.ctx = ctx
+	return l
+}
 
 func (l *DummyLogger) Debug(msg string, v ...interface{}) {}
 

@@ -1,6 +1,6 @@
 module github.com/ArtisanCloud/PowerLibs/v3
 
-go 1.17
+go 1.23
 
 require (
 	github.com/clbanning/mxj/v2 v2.7.0
