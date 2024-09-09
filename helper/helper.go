@@ -1,9 +1,11 @@
 package helper
 
 import (
+	"context"
 	"crypto/sha256"
 	"fmt"
 	. "github.com/ArtisanCloud/PowerLibs/v3/object"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"reflect"
@@ -122,4 +124,22 @@ func CheckPassword(hashedPassword string, password string) (isPasswordValid bool
 	}
 
 	return true
+}
+
+func SpanIDFromContext(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.HasSpanID() {
+		return spanCtx.SpanID().String()
+	}
+
+	return ""
+}
+
+func TraceIDFromContext(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.HasTraceID() {
+		return spanCtx.TraceID().String()
+	}
+
+	return ""
 }
