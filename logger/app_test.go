@@ -35,6 +35,7 @@ func Test_Log_Info(t *testing.T) {
 		"env":        "test",
 		"outputPath": strOutputPath,
 		"errorPath":  strErrorPath,
+		"stdout":     true,
 	})
 	if err != nil {
 		t.Error(err)
