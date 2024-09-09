@@ -76,3 +76,28 @@ func initLogPath(path string, files ...string) (err error) {
 	return err
 
 }
+
+func Test_Log_Info_To_File(t *testing.T) {
+	logger, err := NewLogger(nil, &object.HashMap{
+		"env":        "test",
+		"outputPath": strOutputPath,
+		"errorPath":  strErrorPath,
+		"stdout":     false,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	// without context
+	logger.Info("test info", "app response", &http.Response{})
+
+	// log with context，will append traceId and spanId if ctx hash trace info
+	tracer := otel.Tracer("example-tracer")
+	ctx, span := tracer.Start(context.Background(), "test")
+	logger.WithContext(ctx)
+	defer span.End()
+
+	logger.Info("test info with context")
+	logger.InfoF("current time %s", time.Now().Format("2006-01-02 15:04:05"))
+	logger.Error("test error with context")
+}
