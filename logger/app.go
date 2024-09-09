@@ -35,13 +35,13 @@ func NewLogger(driver interface{}, config *object.HashMap) (logger *Logger, err 
 
 }
 
-func (log *Logger) WithContext(ctx context.Context) *Logger {
+func (log *Logger) WithContext(ctx context.Context) contract.LoggerInterface {
 	log.ctx = ctx
 	return log
 }
 
 func (log *Logger) Debug(msg string, v ...interface{}) {
-	log.Driver.WithContext(log.ctx).WithContext(log.ctx).Debug(msg, v...)
+	log.Driver.WithContext(log.ctx).Debug(msg, v...)
 }
 func (log *Logger) Info(msg string, v ...interface{}) {
 	log.Driver.WithContext(log.ctx).Info(msg, v...)
