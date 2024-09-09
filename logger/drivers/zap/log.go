@@ -9,7 +9,6 @@ import (
 	os2 "github.com/ArtisanCloud/PowerLibs/v3/os"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io"
 	"os"
 	"time"
 )
@@ -75,21 +74,6 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 		loggerConfig = zap.NewDevelopmentConfig()
 	}
 
-	outputFile := (*config)["outputPath"].(string)
-	errorFile := (*config)["errorPath"].(string)
-
-	err = os2.CreateDirectoriesForFiles(outputFile)
-	if err != nil {
-		return nil, err
-	}
-
-	err = os2.CreateDirectoriesForFiles(errorFile)
-	if err != nil {
-		return nil, err
-	}
-
-	loggerConfig.OutputPaths = []string{outputFile}
-	loggerConfig.ErrorOutputPaths = []string{errorFile}
 	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
 	loggerConfig.EncoderConfig.TimeKey = timestampKey
 	loggerConfig.EncoderConfig.LevelKey = levelKey
@@ -97,11 +81,10 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 	loggerConfig.EncoderConfig.MessageKey = contentKey
 	loggerConfig.EncoderConfig.CallerKey = callerKey
 
-	infoLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	infoEnableLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl < zapcore.ErrorLevel
 	})
-
-	errorLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	errorEnableLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl >= zapcore.ErrorLevel
 	})
 
@@ -111,36 +94,49 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 	if ok {
 		switch level {
 		case "debug":
-			infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			infoEnableLevel = func(lvl zapcore.Level) bool {
 				return lvl < zapcore.ErrorLevel
-			})
+			}
 		//case "info":
 		//	infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		//		return lvl < zapcore.ErrorLevel
 		//	})
 		case "error":
-			infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			infoEnableLevel = func(lvl zapcore.Level) bool {
 				return false // 禁用 info 级别
-			})
+			}
 		default:
 		}
 	}
 
-	outputWriter := getWriteSyncer(outputFile)
-	errorWriter := getWriteSyncer(errorFile)
+	stdout, ok := (*config)["stdout"].(bool)
+	if !ok {
+		stdout = false
+	}
+	var outputWriter, errorWriter zapcore.WriteSyncer
+
+	if stdout {
+		outputWriter = getStdoutSyncer()
+		errorWriter = getStdoutSyncer()
+	} else {
+		outputWriter, errorWriter, err = getFileWriter(config)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	core := zapcore.NewTee(
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(loggerConfig.EncoderConfig),
 			//zapcore.Lock(outputSyncer),
 			outputWriter,
-			infoLevel,
+			infoEnableLevel,
 		),
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(loggerConfig.EncoderConfig),
 			//zapcore.Lock(errorSyncer),
 			errorWriter,
-			errorLevel,
+			errorEnableLevel,
 		),
 	)
 
@@ -149,15 +145,34 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 	return logger, err
 }
 
+func getStdoutSyncer() zapcore.WriteSyncer {
+	return zapcore.AddSync(os.Stdout)
+}
+func getFileWriter(config *object.HashMap) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	outputFile := (*config)["outputPath"].(string)
+	errorFile := (*config)["errorPath"].(string)
+
+	err := os2.CreateDirectoriesForFiles(outputFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = os2.CreateDirectoriesForFiles(errorFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return getWriteSyncer(outputFile), getWriteSyncer(errorFile), nil
+}
 func getWriteSyncer(logName string) zapcore.WriteSyncer {
 
-	return zapcore.AddSync(io.MultiWriter(&lumberjack.Logger{
+	return zapcore.AddSync(&lumberjack.Logger{
 		Filename:   logName,
 		MaxSize:    50, // megabytes
 		MaxBackups: 3,
 		MaxAge:     28,   // days
 		Compress:   true, // disabled by default
-	}, os.Stdout))
+	})
 }
 
 func newFileWriteSyncer(filename string) (zapcore.WriteSyncer, error) {
