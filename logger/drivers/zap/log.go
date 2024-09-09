@@ -140,7 +140,7 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 		),
 	)
 
-	logger = zap.New(core).WithOptions(zap.WithCaller(true))
+	logger = zap.New(core).WithOptions(zap.WithCaller(true), zap.AddCallerSkip(3))
 
 	return logger, err
 }
