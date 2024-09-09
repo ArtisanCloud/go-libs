@@ -1,5 +1,7 @@
 package contract
 
+import "context"
+
 const (
 	DebugLevel   int8 = 0
 	InfoLevel    int8 = 1
@@ -23,6 +25,7 @@ type LoggerInterface interface {
 	ErrorF(format string, args ...interface{})
 	PanicF(format string, args ...interface{})
 	FatalF(format string, args ...interface{})
+	WithContext(ctx context.Context) LoggerInterface
 
 	//Log( level int8, msg string, objs ...interface{})
 	//Logf( format string, v ...interface{})

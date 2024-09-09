@@ -1,6 +1,8 @@
 package zap
 
 import (
+	"context"
+	"github.com/ArtisanCloud/PowerLibs/v3/helper"
 	"github.com/ArtisanCloud/PowerLibs/v3/logger/contract"
 	lumberjack "github.com/ArtisanCloud/PowerLibs/v3/logger/lib"
 	"github.com/ArtisanCloud/PowerLibs/v3/object"
@@ -14,7 +16,17 @@ import (
 type Logger struct {
 	Logger *zap.Logger
 	sugar  *zap.SugaredLogger
+	ctx    context.Context
 }
+
+const (
+	callerKey    = "caller"
+	contentKey   = "content"
+	levelKey     = "level"
+	spanKey      = "span"
+	timestampKey = "timestamp"
+	traceKey     = "trace"
+)
 
 func NewLogger(config *object.HashMap) (logger contract.LoggerInterface, err error) {
 
@@ -33,6 +45,26 @@ func NewLogger(config *object.HashMap) (logger contract.LoggerInterface, err err
 	return logger, err
 }
 
+func (log *Logger) WithContext(ctx context.Context) contract.LoggerInterface {
+
+	if log.ctx != nil {
+		return log
+	}
+	log.ctx = ctx
+
+	traceID := helper.TraceIDFromContext(ctx)
+	if len(traceID) > 0 {
+		log.sugar = log.sugar.With(traceKey, traceID)
+	}
+
+	spanID := helper.SpanIDFromContext(log.ctx)
+	if len(spanID) > 0 {
+		log.sugar = log.sugar.With(spanKey, spanID)
+	}
+
+	return log
+}
+
 func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 	env := (*config)["env"].(string)
 	var loggerConfig zap.Config
@@ -42,52 +74,17 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 		loggerConfig = zap.NewDevelopmentConfig()
 	}
 
-	outputFile := (*config)["outputPath"].(string)
-	errorFile := (*config)["errorPath"].(string)
-
-	err = os2.CreateDirectoriesForFiles(outputFile)
-	if err != nil {
-		return nil, err
-	}
-	err = os2.CreateDirectoriesForFiles(errorFile)
-	if err != nil {
-		return nil, err
-	}
-
-	loggerConfig.OutputPaths = []string{outputFile}
-	loggerConfig.ErrorOutputPaths = []string{errorFile}
-	loggerConfig.EncoderConfig.TimeKey = "timestamp"
 	loggerConfig.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.RFC3339)
+	loggerConfig.EncoderConfig.TimeKey = timestampKey
+	loggerConfig.EncoderConfig.LevelKey = levelKey
+	loggerConfig.EncoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
+	loggerConfig.EncoderConfig.MessageKey = contentKey
+	loggerConfig.EncoderConfig.CallerKey = callerKey
 
-	//outputSyncer, err := newFileWriteSyncer(outputFile)
-	//if err != nil {
-	//	return nil, err
-	//}
-	outputWriter := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   outputFile,
-		MaxSize:    50, // megabytes
-		MaxBackups: 3,
-		MaxAge:     28,   // days
-		Compress:   true, // disabled by default
-	})
-
-	//errorSyncer, err := newFileWriteSyncer(errorFile)
-	//if err != nil {
-	//	return nil, err
-	//}
-	errorWriter := zapcore.AddSync(&lumberjack.Logger{
-		Filename:   errorFile,
-		MaxSize:    50, // megabytes
-		MaxBackups: 3,
-		MaxAge:     28,   // days
-		Compress:   true, // disabled by default
-	})
-
-	infoLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	infoEnableLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl < zapcore.ErrorLevel
 	})
-
-	errorLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+	errorEnableLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl >= zapcore.ErrorLevel
 	})
 
@@ -97,18 +94,34 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 	if ok {
 		switch level {
 		case "debug":
-			infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			infoEnableLevel = func(lvl zapcore.Level) bool {
 				return lvl < zapcore.ErrorLevel
-			})
+			}
 		//case "info":
 		//	infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		//		return lvl < zapcore.ErrorLevel
 		//	})
 		case "error":
-			infoLevel = zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			infoEnableLevel = func(lvl zapcore.Level) bool {
 				return false // 禁用 info 级别
-			})
+			}
 		default:
+		}
+	}
+
+	stdout, ok := (*config)["stdout"].(bool)
+	if !ok {
+		stdout = false
+	}
+	var outputWriter, errorWriter zapcore.WriteSyncer
+
+	if stdout {
+		outputWriter = getStdoutSyncer()
+		errorWriter = getStdoutSyncer()
+	} else {
+		outputWriter, errorWriter, err = getFileWriter(config)
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -117,19 +130,49 @@ func newZapLogger(config *object.HashMap) (logger *zap.Logger, err error) {
 			zapcore.NewJSONEncoder(loggerConfig.EncoderConfig),
 			//zapcore.Lock(outputSyncer),
 			outputWriter,
-			infoLevel,
+			infoEnableLevel,
 		),
 		zapcore.NewCore(
 			zapcore.NewJSONEncoder(loggerConfig.EncoderConfig),
 			//zapcore.Lock(errorSyncer),
 			errorWriter,
-			errorLevel,
+			errorEnableLevel,
 		),
 	)
 
-	logger = zap.New(core)
+	logger = zap.New(core).WithOptions(zap.WithCaller(true), zap.AddCallerSkip(3))
 
 	return logger, err
+}
+
+func getStdoutSyncer() zapcore.WriteSyncer {
+	return zapcore.AddSync(os.Stdout)
+}
+func getFileWriter(config *object.HashMap) (zapcore.WriteSyncer, zapcore.WriteSyncer, error) {
+	outputFile := (*config)["outputPath"].(string)
+	errorFile := (*config)["errorPath"].(string)
+
+	err := os2.CreateDirectoriesForFiles(outputFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = os2.CreateDirectoriesForFiles(errorFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return getWriteSyncer(outputFile), getWriteSyncer(errorFile), nil
+}
+func getWriteSyncer(logName string) zapcore.WriteSyncer {
+
+	return zapcore.AddSync(&lumberjack.Logger{
+		Filename:   logName,
+		MaxSize:    50, // megabytes
+		MaxBackups: 3,
+		MaxAge:     28,   // days
+		Compress:   true, // disabled by default
+	})
 }
 
 func newFileWriteSyncer(filename string) (zapcore.WriteSyncer, error) {
