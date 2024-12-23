@@ -30,7 +30,7 @@ func NewRSASigner(hash crypto.Hash) (signer *RSASigner, err error) {
 // ----------------------------------------------------------------------------------------------------
 
 // Sign
-//use hash method to make an actual sign
+// use hash method to make an actual sign
 func (signer *RSASigner) Sign(msg []byte) (msgHashSum []byte, err error) {
 
 	msgHash := signer.RSAEncryptor.Hash.New()

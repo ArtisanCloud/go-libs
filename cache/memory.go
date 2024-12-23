@@ -13,8 +13,6 @@ import (
 const DEFAULT_EXPIRES_IN = 5
 const DEFAULT_PURGE_EXPIRES_IN_PERIOD = 10
 
-
-
 type MemCache struct {
 	*cache.Cache
 	cacheFile string
@@ -22,7 +20,7 @@ type MemCache struct {
 
 func NewMemCache(namespace string, defaultLifeTime time.Duration, directory string) CacheInterface {
 
-	if ACCache!=nil{
+	if ACCache != nil {
 		return ACCache
 	}
 
