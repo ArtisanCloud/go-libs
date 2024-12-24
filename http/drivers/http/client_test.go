@@ -10,7 +10,7 @@ func Test_NewClient(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	
+
 	if helper == nil {
 		t.Error(err)
 	}

@@ -55,11 +55,17 @@ func (c *Client) SetConfig(config *contract.ClientConfig) {
 	if config != nil {
 		c.conf = config
 	}
+	var proxy func(*http.Request) (*url.URL, error)
+	if config.ProxyURI != "" {
+		if proxyURL, err := url.Parse(config.ProxyURI); err == nil {
+			proxy = http.ProxyURL(proxyURL)
+		}
+	}
+	coreClient := http.Client{
+		Timeout: config.Timeout,
+	}
 	// todo set coreClient
 	if config.Cert.CertFile != "" && config.Cert.KeyFile != "" {
-		coreClient := http.Client{
-			Timeout: config.Timeout,
-		}
 		certPair, err := tls.LoadX509KeyPair(config.Cert.CertFile, config.Cert.KeyFile)
 		if err != nil {
 			err = errors.Wrap(err, "failed to load certificate")
@@ -70,8 +76,11 @@ func (c *Client) SetConfig(config *contract.ClientConfig) {
 			Certificates: []tls.Certificate{certPair},
 		}}
 		c.coreClient = &coreClient
+	} else if proxy != nil {
+		coreClient.Transport = &http.Transport{TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		}, Proxy: proxy}
 	}
-
 }
 
 // GetConfig 返回配置副本

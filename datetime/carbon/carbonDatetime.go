@@ -2,7 +2,6 @@ package carbon
 
 import (
 	"github.com/golang-module/carbon"
-	"time"
 )
 
 type CarbonDatetime struct {
@@ -11,11 +10,12 @@ type CarbonDatetime struct {
 
 var DefaultTimeZone = carbon.UTC
 
-const DATETIME_FORMAT = "Y-m-d H:i:s"
-const TIME_FORMAT = "H:i:s"
+const (
+	DATETIME_FORMAT = "Y-m-d H:i:s"
+	TIME_FORMAT     = "H:i:s"
+)
 
 func CreateCarbonDatetime(c carbon.Carbon) (dt *CarbonDatetime) {
-
 	dt = &CarbonDatetime{
 		&c,
 	}
@@ -34,11 +34,5 @@ func (dt *CarbonDatetime) SetTimezone(timezone string) *CarbonDatetime {
 }
 
 func GetCarbonNow() carbon.Carbon {
-	now := carbon.Now()
-
-	locProject, _ := time.LoadLocation(DefaultTimeZone)
-
-	now.Time = now.Time.In(locProject)
-
-	return now
+	return carbon.Now(DefaultTimeZone)
 }

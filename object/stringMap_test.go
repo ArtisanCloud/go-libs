@@ -12,14 +12,12 @@ func Test_MergeStringMap(t *testing.T) {
 		"key2": "xxx",
 		"key3": "",
 		"key4": "101112",
-
 	}
 
 	toMap := &StringMap{
 		"key1": "",
 		"key2": "456",
 		"key3": "789",
-
 	}
 
 	toMap = MergeStringMap(toMap, base)
@@ -32,8 +30,6 @@ func Test_MergeStringMap(t *testing.T) {
 	}, toMap)
 
 }
-
-
 
 func Test_ReplaceStringMapRecursive(t *testing.T) {
 
@@ -72,4 +68,3 @@ func Test_ReplaceStringMapRecursive(t *testing.T) {
 	}, toMap)
 
 }
-
