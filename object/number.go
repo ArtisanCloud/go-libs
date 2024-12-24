@@ -9,7 +9,7 @@ func IsNumeric(val interface{}, trueNumber bool) bool {
 		return true
 	case string:
 
-		if trueNumber{
+		if trueNumber {
 			return false
 		}
 
@@ -23,7 +23,8 @@ func IsNumeric(val interface{}, trueNumber bool) bool {
 			if len(str) == 1 {
 				return false
 			}
-			str = str[1:]		}
+			str = str[1:]
+		}
 		// hex
 		if len(str) > 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X') {
 			for _, h := range str[2:] {

@@ -4,9 +4,6 @@ import "reflect"
 
 type Array []interface{}
 
-
-
-
 func InArray(needle interface{}, hystack interface{}) bool {
 	switch key := needle.(type) {
 	case string:
@@ -32,7 +29,6 @@ func InArray(needle interface{}, hystack interface{}) bool {
 	}
 	return false
 }
-
 
 func SearchInArray(val interface{}, array interface{}) (exists bool, index int) {
 	exists = false

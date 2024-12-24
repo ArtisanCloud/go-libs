@@ -249,7 +249,6 @@ func Shuffle(str string) string {
 	return string(inRune)
 }
 
-
 func QuickRandom(length int) string {
 	pool := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -268,6 +267,7 @@ const (
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
+
 func RandStringBytesMask(n int) string {
 	b := make([]byte, n)
 	// A rand.Int63() generates 63 random bits, enough for letterIdxMax letters!
@@ -285,7 +285,6 @@ func RandStringBytesMask(n int) string {
 
 	return string(b)
 }
-
 
 func ContainsString(s []string, str string) bool {
 	for _, v := range s {

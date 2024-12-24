@@ -10,4 +10,3 @@ type Throwable interface {
 	GetPrevious() *Throwable
 	__toString() string
 }
-
