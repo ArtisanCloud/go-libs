@@ -44,6 +44,12 @@ func NewHttpClient(config *contract.ClientConfig) (*Client, error) {
 			InsecureSkipVerify: true,
 		}, Proxy: proxy}
 	}
+
+	if config.Transport != nil {
+		// 这里会直接覆盖上面的 tls 和 proxy 有能力配置这个的话会自己解决的
+		coreClient.Transport = config.Transport
+	}
+
 	return &Client{
 		conf:       config,
 		coreClient: &coreClient,
