@@ -12,6 +12,8 @@ type ClientConfig struct {
 	ProxyURI string
 	// 如果需要定制化tls, 设置该属性, 否则请使用Cert
 	TlsConfig *tls.Config
+
+	Transport http.RoundTripper
 }
 
 type CertConfig struct {
